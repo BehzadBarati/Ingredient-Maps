@@ -1,0 +1,17 @@
+/* if it does not update chrome, try ctrl+shif+R to refresh. because of cach of chrome*/
+
+h1 {
+    color: rgb(20, 20, 107);
+    font-size: 40px;
+}
+
+body {
+    background: #e6e4e4;
+}
+.row {
+    display: flex;
+  }
+  
+  .column {
+    flex: 50%;
+  }
