@@ -1,71 +1,74 @@
 # Authur: Behzad Barati
-# 
-# Inspired by followings: 
-# https://github.com/fenna/dashboard_ok_web
-# https://www.youtube.com/watch?v=Z1RJmh_OqeA&t=269s
-# https://www.youtube.com/watch?v=aWN1CqMtzIE&t=613s 
 
 from flask import Flask, render_template, request, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
+from appfunctions import *
+import pandas as pd
 
-#Create a Flask instance
+# Create a Flask instance
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql:///user.db'
-db = SQLAlchemy(app)
 
-class Todo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    rec = db.Column(db.String(200), nullable=False)
-    ner = db.Column(db.String(200), nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return '<Task %r>' % self.id
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
+    df = pd.DataFrame()
     if request.method == 'POST':
-        recipe_name = request.form['rec']
-        ner_name = request.form['ner']
-        new_task = Todo(rec = recipe_name, ner=ner_name)
+        searched_recipe = request.form['searched_recipe']
+        exact = request.form['exact_search']
+        searched_ner = request.form['searched_ner']
+        if len(searched_ner):
+            result, df = queryOnRecipeNer(searched_recipe, searched_ner, exact)
+        else:    
+            result, df = queryOnRecipe(searched_recipe, exact)
+        minimal_wordcloud(result, 2)
+        return render_template('searchResult.html', resultDetails = df)
+    return render_template('index.html', resultDetails = df)
 
-        try:
-            db.session.add(new_task)
-            db.session.commit()
-            return redirect('/')
-        except:
-            return 'There is an issue in adding recipe'
-    else:
-        tasks = Todo.query.order_by(Todo.date_created).all()
-        return render_template('index.html', tasks= tasks)
-
-app.route('/search', methods=['GET', 'POST'])
-def search():
-    if request.method == 'POST':
-        form = request.form
-        search_value = form['search_string']
-        search = "%{0}%".format(search_value)
-        #results = Todo.query.order_by(Todo.date_created).all()
-        results = Todo.query.filter(Todo.rec.like(search)).all()
-        print(results)
-        return render_template('index.html', tasks = results)
-    else:
-        return redirect('/')
-
-
-@app.route('/delete/<int:id>')
-def delete(id):
-    recipe_to_delete = Todo.query.get_or_404(id)
-
-    try:
-        db.session.delete(recipe_to_delete)
-        db.session.commit()
-        return redirect('/')
-    except:
-        return "There is a problem in deleting that recipe"
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'public, max-age=0'
+    return response
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+#@app.route('/searchResult/<keyword>')
+#def search(keyword):
+#    connection = sqlite3.connect(currentDirectory + "\database\\\\recipe.db")
+#    cursor = connection.cursor()
+#    query1 = "SELECT R.ID, R.tag_value FROM recipe R WHERE R.tag_value LIKE '%{0}%';".format(keyword)
+#    resultValue = cursor.execute(query1)
+#    resultDetails = resultValue.fetchall()
+#    return render_template('searchResult.html', resultDetails = resultDetails)
+
+
+#@app.route('/delete/<int:id>')
+#def delete(id):
+#    recipe_to_delete = Todo.query.get_or_404(id)
+#    try:
+#        db.session.delete(recipe_to_delete)
+#        db.session.commit()
+#        return redirect('/')
+#    except:
+#        return "There is a problem in deleting that recipe"
+
+
+#@app.route('/', methods=['POST', 'GET'])
+#def index():
+#    if request.method == 'POST':
+#        search_string = request.form['search_string']
+#        return redirect(url_for('search', keyword = search_string))
+#    return render_template('index.html', , resultDetails = resultDetails)
+
+
+# Create a Form class
+#class searchForm (FlaskForm):
+#    searched_recipe = StringField("what recipe are you looking for?", validators=[DataRequired()])
+#    searched_ner = StringField("what ingredient are you looking for?")
+#    search = SubmitField("Search")
+    

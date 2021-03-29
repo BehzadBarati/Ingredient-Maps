@@ -12,6 +12,14 @@ body {
     display: flex;
   }
   
-  .column {
-    flex: 50%;
-  }
+.column {
+  flex: 50%;
+}
+
+
+.table{
+display: block;
+width: 500;
+height: 600px;
+overflow-y: scroll;
+}

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+    {% block body %}
+    <div class="row" height=5000>
+        <div class="column">
+            <div class= 'search_panel'>
+                <p> Search panel</p>
+                <form action = "" method = "POST">
+                    <div class="row g-3">
+                        <div class="col">
+                            <input type = "text" name="searched_recipe" class="form-control" placeholder="Recipe">
+                        </div>
+                        <div class="col">
+                            <input type = "text" name="searched_ner" class="form-control" placeholder="Ingredients">
+                        </div>
+                    </div>
+                    <br>
+                    <div class="row g-3">
+                        <div class="col">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" name="exact_search" type="checkbox" id="flexSwitchCheckDefault" value="1">
+                                <input class="form-check-input" name="exact_search" type="hidden" id="flexSwitchCheckDefault" value="0">
+                                <label class="form-check-label" for="flexSwitchCheckDefault">recipe name exact match</label>
+                            </div>
+                        </div> 
+                        <div class="col">
+                            <input type="submit" value="Search" class="btn btn-success">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <br>
+            <div style="overflow: auto;">
+                <table class="table table-hover table-bordered table-striped " >
+                    <tr>
+                        <th>Recipe ID</th>
+                        <th>Recipe Name</th>
+                        <th>Ingredients</th>
+                    </tr>
+                    {% for _, row in resultDetails.iterrows() %}
+                    <tr>
+                        <td>{{row['recipe_id']}}</td>
+                        <td>{{row['recipe_name']}}</td>
+                        <td>{{row['ner_name']}}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        <div class="column">
+            <br>
+            <img src="{{ url_for('static', filename='images/graph.png')}}" width=500>
+            <br></br>
+            <img src="{{ url_for('static', filename='images/sample1.jpg')}}" width=500>
+            <br></br>
+            <img src="{{ url_for('static', filename='images/sample2.jpg')}}" width=500>
+        </div>
+    </div>
+
+
+    <br></br>
+    <p id="demo"></p>
+    <script src="{{ url_for('static', filename='js/myfile.js') }}">
+    </script>
+    {% endblock %}
+{% endblock %}
