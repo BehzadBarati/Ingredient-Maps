@@ -1,1 +1,4 @@
-This folder contains scripts for running the web portal of ingredient maps project.
+- This folder contains scripts for running the web portal of ingredient maps project.
+- you need to put recipe.db in 'database' folder to run the app.py
+- you need to install wordcloud library of python for making wordclouds pics.
+- Web portal is still under development and needs further optimizations. 
