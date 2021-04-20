@@ -23,7 +23,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" name="exact_search" type="checkbox" id="flexSwitchCheckDefault" value="1">
                                 <input class="form-check-input" name="exact_search" type="hidden" id="flexSwitchCheckDefault" value="0">
-                                <label class="form-check-label" for="flexSwitchCheckDefault">recipe name exact match</label>
+                                <label class="form-check-label" for="flexSwitchCheckDefault">Exact Search</label>
                             </div>
                         </div> 
                         <div class="col">
@@ -42,20 +42,29 @@
                     </tr>
                     {% for _, row in resultDetails.iterrows() %}
                     <tr>
-                        <td>{{row['recipe_id']}}</td>
-                        <td>{{row['recipe_name']}}</td>
-                        <td>{{row['ner_name']}}</td>
+                        <td>{{row['ID']}}</td>
+                        <td>{{row['Recipes']}}</td>
+                        <td>{{row['Ingredients']}}</td>
                     </tr>
                     {% endfor %}
                 </table>
             </div>
         </div>
         <div class="column">
+            <div class="search_result">
+                <p>Results: </p>
+                <br>
+                <p>We were looking for: {{summary[0]}}</p>
+                <p>Number of recipes: {{ summary[1] }}</p>
+                <p>Recipe with max number of ingredients: {{ summary[2] }}</p>
+                <p>Recipe with min number of ingredients: {{ summary[3] }}</p>
+                
+            </div>
             <br>
             <img src="{{ url_for('static', filename='images/graph.png')}}" width=500>
-            <br></br>
+            <br>
             <img src="{{ url_for('static', filename='images/sample1.jpg')}}" width=500>
-            <br></br>
+            <br>
             <img src="{{ url_for('static', filename='images/sample2.jpg')}}" width=500>
         </div>
     </div>

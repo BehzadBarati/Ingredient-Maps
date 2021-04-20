@@ -6,11 +6,39 @@
 
 import os
 import sqlite3
+import numpy as np
 import pandas as pd
 from PIL import Image
 from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
 
 currentDirectory = os.path.dirname(os.path.abspath(__file__))
+
+def DBInitializer():
+
+    #Inputs: None ()
+    #Output: None (make views/index for DB, view name:view_table1)
+
+    connection = sqlite3.connect(currentDirectory + "\database\\\\recipe.db")
+    cursor = connection.cursor()
+
+    query1 = f"""CREATE INDEX IF NOT EXISTS iNer ON ner(ID);"""
+    cursor.execute(query1)
+
+    query2 = f"""CREATE INDEX IF NOT EXISTS iRecipe ON recipe(ID);"""
+    cursor.execute(query2)
+
+    query3 = f"""CREATE INDEX IF NOT EXISTS iStep ON step(ID);"""
+    cursor.execute(query3)
+
+    query4 = f"""CREATE VIEW IF NOT EXISTS view_table1 AS
+                SELECT R.ID, R.tag_value AS Recipes, N.tag_value AS Ingredients 
+                FROM recipe R 
+                JOIN recipe_ner RN ON R.ID = RN.recipe_id
+                JOIN ner N ON RN.ner_id = N.ID;"""
+    cursor.execute(query4)
+
 
 def queryOnRecipe(searched_recipe, exact_search):
     
@@ -18,20 +46,16 @@ def queryOnRecipe(searched_recipe, exact_search):
     #Output: list of tuples as result, grouped dataframe on recipes 
     
     if exact_search == '1':
-        query = f"""SELECT R.ID, R.tag_value, N.tag_value 
-                FROM recipe R 
-                JOIN recipe_ner RN ON R.ID = RN.recipe_id
-                JOIN ner N ON RN.ner_id = N.ID
-                WHERE R.tag_value LIKE '%{searched_recipe}%';"""
+        query = f"""SELECT *
+                FROM view_table1
+                WHERE Recipes LIKE '%{searched_recipe}%';"""
     else:
-        query = f"""SELECT R.ID, R.tag_value, N.tag_value 
-                FROM recipe R 
-                JOIN recipe_ner RN ON R.ID = RN.recipe_id
-                JOIN ner N ON RN.ner_id = N.ID
-                WHERE R.tag_value LIKE '%{searched_recipe.split(' ')[0]}%'"""
+        query = f"""SELECT *
+                FROM view_table1
+                WHERE Recipes LIKE '%{searched_recipe.split(' ')[0]}%'"""
         if len(searched_recipe.split(' ')) > 1:
             for i in searched_recipe.split(' ')[1:]:
-                query += f""" AND R.tag_value LIKE '%{i}%'"""
+                query += f""" AND Recipes LIKE '%{i}%'"""
         query += """;"""
 
     print(query)
@@ -39,8 +63,9 @@ def queryOnRecipe(searched_recipe, exact_search):
     cursor = connection.cursor()
     resultValue = cursor.execute(query)
     result = resultValue.fetchall()
-    df = pd.DataFrame(result, columns=['recipe_id', 'recipe_name', 'ner_name'])
-    df = df.groupby(['recipe_id', 'recipe_name'])['ner_name'].apply(list).reset_index()
+    df = pd.DataFrame(result, columns=['ID', 'Recipes', 'Ingredients'])
+    df = df.groupby(['ID', 'Recipes'])['Ingredients'].apply(list).reset_index()
+    
     return result, df
 
 
@@ -52,50 +77,68 @@ def queryOnRecipeNer(searched_recipe, searched_ner, exact_search):
     # generate first query to find recipe ID match criteria
 
     if exact_search == '1':
-        query1 = f"""SELECT R.ID 
-                FROM recipe R 
-                WHERE R.tag_value LIKE '%{searched_recipe}%'"""
+        query1 = f"""SELECT ID 
+                FROM view_table1 
+                WHERE Recipes LIKE '%{searched_recipe}%'"""
     else:
-        query1 = f"""SELECT R.ID 
-                FROM recipe R 
-                WHERE R.tag_value LIKE '%{searched_recipe.split(' ')[0]}%'"""
+        query1 = f"""SELECT ID 
+                FROM view_table1 
+                WHERE Recipes LIKE '%{searched_recipe.split(' ')[0]}%'"""
         if len(searched_recipe.split(' ')) > 1:
             for i in searched_recipe.split(' ')[1:]:
-                query1 += f""" AND R.tag_value LIKE '%{i}%'"""
+                query1 += f""" AND Recipes LIKE '%{i}%'"""
     
-    query1 += f''' INTERSECT
-                SELECT RN.recipe_id
-                FROM recipe_ner RN
-                JOIN ner N ON RN.ner_id = N.ID
-                WHERE N.tag_value LIKE '%{searched_ner}%'
+    query1 += f'''
+                AND Ingredients LIKE '%{searched_ner}%' ;
                 '''
-    #if len(searched_ner.split(' ')) > 1:
-    #    for i in searched_ner.split(' ')[1:]:
-    #        query1 += f"""AND N.tag_value LIKE '%{i}%'"""
-
-    print(query1)
+    
     connection = sqlite3.connect(currentDirectory + "\database\\\\recipe.db")
     cursor = connection.cursor()
+    resultValue1 = cursor.execute(query1)
+    result1 = resultValue1.fetchall()
+    result1 = tuple(sum(result1, ()))
 
     # generate second query
-    query2 = f"""SELECT R.ID, R.tag_value, N.tag_value 
-                FROM recipe R 
-                JOIN recipe_ner RN ON R.ID = RN.recipe_id
-                JOIN ner N ON RN.ner_id = N.ID
-                WHERE R.ID IN ({query1});"""
+    query2 = f"""SELECT *
+                FROM view_table1 
+                WHERE ID IN {result1};"""
+
     print(query2)
 
     # generate final results
+    cursor = connection.cursor()
     resultValue2 = cursor.execute(query2)
     result2 = resultValue2.fetchall()
-
-    df = pd.DataFrame(result2, columns=['recipe_id', 'recipe_name', 'ner_name'])
-    df = df.groupby(['recipe_id', 'recipe_name'])['ner_name'].apply(list).reset_index()
+    df = pd.DataFrame(result2, columns=['ID', 'Recipes', 'Ingredients'])
+    df = df.groupby(['ID', 'Recipes'])['Ingredients'].apply(list).reset_index()
+    
     return result2, df
 
 
-# For creating word clouds, I used WordCloud library which was imported before.
+def searchsummary(l, df):
+
+    # a function for processing dataframe. output is a list of items as follow:
+    # 0: what we were looking for
+    # 1: Number of found recipes
+    # 2: recipe with max ingredients
+    # 3: recipe with min ingredients
+    
+    summary = []
+    #0
+    summary.append(l)
+    #1
+    summary.append(df.shape[0])
+    field_length = df['Ingredients'].astype(str).map(len)
+    #2
+    summary.append(df.loc[field_length.argmax(), 'ID'])
+    #3
+    summary.append(df.loc[field_length.argmin(), 'ID'])
+    return summary
+
+
 def minimal_wordcloud(result, column):
+    # For creating word clouds, I used WordCloud library which was imported before.
+
     """
     Generate a simple wordcloud similar to: 
     https://www.kaggle.com/paultimothymooney/explore-recipe-nlg-dataset/data.
@@ -103,6 +146,7 @@ def minimal_wordcloud(result, column):
     """
     text = " ".join(row[column] for row in result)
     print(text[:100])
-    wordcloud = WordCloud(background_color="white").generate(text)
-    image = wordcloud.to_image()
-    image.save("static/images/graph.png", "")
+    if len(text) > 0:
+        wordcloud = WordCloud(background_color="white").generate(text)
+        image = wordcloud.to_image()
+        image.save("static/images/graph.png", "")

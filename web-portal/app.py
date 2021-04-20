@@ -6,10 +6,15 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from appfunctions import *
 import pandas as pd
+import time
+from jinja2 import Template
+
 
 # Create a Flask instance
 app = Flask(__name__)
 
+#make view of database
+DBInitializer()
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
@@ -18,13 +23,17 @@ def index():
         searched_recipe = request.form['searched_recipe']
         exact = request.form['exact_search']
         searched_ner = request.form['searched_ner']
+        start = time.time()
         if len(searched_ner):
             result, df = queryOnRecipeNer(searched_recipe, searched_ner, exact)
         else:    
             result, df = queryOnRecipe(searched_recipe, exact)
+        end = time.time()
+        print('TIME ELAPSED for running the query: ', end - start)
         minimal_wordcloud(result, 2)
-        return render_template('searchResult.html', resultDetails = df)
-    return render_template('index.html', resultDetails = df)
+        summary = searchsummary([searched_recipe, searched_ner], df)
+        return render_template('index.html', resultDetails = df, summary=summary)
+    return render_template('index.html', resultDetails = df, summary=None)
 
 @app.after_request
 def add_header(response):
