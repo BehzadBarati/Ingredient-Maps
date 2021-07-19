@@ -8,7 +8,7 @@ This repository consists of following notebooks. first 2 notebooks are used to a
 
 - Get_ingredients_of_Tomato_Soups_RecipeNLG.ipynb : a notebook for extracting most frequent ingredients which are used in tomato soups recipes.
 
-- lavorGraph_Embedding.ipynb : this notebook tries to capture neighbors of each ingredient in tomato soup.
+- FlavorGraph_Embedding.ipynb : this notebook tries to capture neighbors of each ingredient in tomato soup.
 
 - EDA-Report-RecipeNLG.html: a report on recipeNLG dataset.
 
